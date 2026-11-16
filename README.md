@@ -12,6 +12,12 @@ python server.py
 
 Abre <http://localhost:8000>. El servidor sirve la app y expone `/api/ephemeris` como proxy de mismo origen para JPL Horizons (el navegador no puede consultar ese servicio directamente por CORS).
 
+## Caminar en Apolo 11
+
+Elegí **Caminar · Apolo 11** para recorrer una escena en primera persona. Usá WASD o los botones en pantalla para moverte, y arrastrá o usá las flechas del teclado para mirar. Escape vuelve al globo.
+
+La caminata recrea la colocación de la bandera en 1969 y usa un terreno procedural a escala de metros. El pin orbital señala el módulo lunar Eagle en 0,67416° N, 23,47314° E. La bandera de la escena se inspira en las dimensiones y orientación registradas por la [fotogrametría de Apolo 11](https://www.nasa.gov/wp-content/uploads/static/history/alsj/a11/a11Photogrammetry.html). La [NASA documenta](https://www.nasa.gov/wp-content/uploads/static/history/alsj/ApolloFlags-Condition.html) el testimonio de Aldrin de que la bandera cayó durante el despegue.
+
 ## Recursos
 
 - `lroc_color_4k.jpg`: albedo del TIFF local, convertido a JPEG para compatibilidad con navegadores.

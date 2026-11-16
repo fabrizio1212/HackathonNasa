@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#070b10" />
+    <title>Luna — Polar Planner</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin /><link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+        }
+      }
+    </script>
+    <link rel="stylesheet" href="./styles.css?v=lunar-motion" />
+  </head>
+  <body>
+    <main id="app">
+      <header class="topbar">
+        <div class="brand">
+          <div>
+            <h1 class="brand-title">Luna <span>Polar Planner</span></h1>
+            
+          </div>
+        </div>
+        <button id="mission-toggle" type="button" aria-controls="mission-panel" aria-expanded="false">Mission planning</button><div class="top-status">
+          <span class="live-dot"></span>
+          <span id="mode-subtitle">Starting</span>
+          <span class="status-divider"></span>
+          <span id="utc-clock">00:00:00 UTC</span>
+        </div>
+      </header>
+      <div class="workspace">
+        <div class="map-column">
+          <section class="map-stage" aria-label="Lunar exploration">
+            <div id="viewport" aria-label="Interactive lunar globe"></div>
+            <div class="map-title"><span id="map-location">Lunar South Pole</span><small id="map-source">LROC imagery</small></div>
+
+      <section class="compass-hud" aria-label="Camera compass">
+        <div class="compass-caption"><span>Camera azimuth</span></div>
+        <div id="compass-tape" class="compass-tape"></div>
+        <div class="compass-center"></div>
+        <div class="compass-readout"><span id="heading-readout">000°</span></div>
+      </section>
+
+      <aside class="side-gauge latitude-gauge" aria-label="Latitudee of selected point">
+        <div class="gauge-title">LAT <span>°</span></div>
+        <div class="gauge-track">
+          <span class="gauge-label north">90°N</span>
+          <span class="gauge-label equator">0°</span>
+          <span class="gauge-label south">90°S</span>
+          <div class="gauge-marker" id="latitude-marker"><i></i></div>
+        </div>
+        <div class="gauge-value" id="latitude-readout">—</div>
+      </aside>
+
+      <aside class="side-gauge elevation-gauge" aria-label="Solar elevation">
+        <div class="gauge-title">SUN <span>EL</span></div>
+        <div class="gauge-track">
+          <span class="gauge-label north">90°</span>
+          <span class="gauge-label equator">45°</span>
+          <span class="gauge-label south">0°</span>
+          <div class="gauge-marker" id="elevation-marker"><i></i></div>
+        </div>
+        <div class="gauge-value" id="elevation-readout">22.0°</div>
+      </aside>
+
+            <button id="surface-toggle" class="surface-toggle" type="button" aria-controls="viewport" aria-pressed="false" disabled>Walk · Apollo 11</button>
+            <div id="walk-help" class="walk-help" hidden>
+              <p>WASD to walk · Shift to run · Space to jump · Drag to look</p>
+              <div class="walk-pad" aria-label="Walking controls">
+                <button type="button" data-move="KeyA" aria-label="Walk left">←</button>
+                <button type="button" data-move="KeyW" aria-label="Walk forward">↑</button>
+                <button type="button" data-move="KeyS" aria-label="Walk backward">↓</button>
+                <button type="button" data-move="KeyD" aria-label="Walk right">→</button>
+                <button class="walk-action" type="button" data-move="ShiftLeft">Run</button>
+                <button class="walk-action" type="button" data-move="Space">Jump</button>
+              </div>
+            </div>
+            <div class="map-legend"><span><i class="legend-pin"></i> Mission site</span><span><i class="legend-cursor"></i> Terrain point</span></div>
+            <div id="loading-status" class="loading-status" role="status">Loading lunar terrain…</div>
+            <div id="error-message" class="error-message" role="alert"></div>
+          </section>
+          <div class="map-controls">
+      <section class="readout-panel">
+        <div class="panel-eyebrow">Point of interest</div>
+        <div class="coordinate-row">
+          <div><small>Latitude</small><strong id="coord-lat">—</strong></div>
+          <div><small>Longitude</small><strong id="coord-lon">—</strong></div>
+        </div>
+        <div class="readout-divider"></div>
+        <div class="readout-stats">
+          <div><span>Illumination</span><strong id="coord-light">—</strong></div>
+          <div><span>Earth link</span><strong id="coord-los">—</strong></div>
+        </div>
+        <div class="panel-footnote">Geometric estimate · no ephemeris</div>
+      </section>
+
+      <section class="control-panel">
+        <div class="control-heading">
+          <div><div class="panel-eyebrow">Solar simulation</div><small>Manual Sun position</small></div>
+          <span class="sun-status"><i></i> <span id="mode-label">Simulation</span></span>
+        </div>
+        <label class="slider-row" for="sun-azimuth">
+          <span>Azimuth <b id="sun-azimuth-value">270°</b></span>
+          <input id="sun-azimuth" type="range" min="0" max="359" value="270" />
+          <span class="slider-scale"><i>000°</i><i>180°</i><i>359°</i></span>
+        </label>
+        <label class="slider-row elevation-slider" for="sun-elevation">
+          <span>Elevation <b id="sun-elevation-value">22.0°</b></span>
+          <input id="sun-elevation" type="range" min="0" max="90" step="0.5" value="22" />
+          <span class="slider-scale"><i>Horizon</i><i>90°</i></span>
+        </label>
+        <div class="control-footer"><span>Drag to orbit · Scroll to zoom</span><button id="reset-view" type="button">Reset view</button></div>
+      </section>
+
+          </div></div><aside id="mission-panel" class="mission-panel" aria-label="Mission planning">
+        <div class="mission-panel-head">
+          <div>
+            <h2 class="panel-eyebrow">Mission planning</h2>
+            <div class="mission-subtitle">Choose a site and reference time.</div>
+          </div>
+          <span class="site-count" id="site-count">07</span>
+        </div>
+        <form id="ephemeris-form" class="ephemeris-form">
+          <div class="ephemeris-form-heading">
+            <span>Reference time</span>
+            <span class="utc-badge">UTC</span>
+          </div>
+          <div class="ephemeris-inputs">
+            <label>
+              <span>Date</span>
+              <input id="analysis-date" name="date" type="date" required />
+            </label>
+            <label>
+              <span>Time</span>
+              <input id="analysis-time" name="time" type="time" value="12:00" required />
+            </label>
+            <button id="analyze-button" type="submit">
+              
+              <span>Calculate</span>
+            </button>
+          </div>
+          <div id="ephemeris-status" class="ephemeris-status" role="status" aria-live="polite">
+            <span class="status-dot"></span>
+            <span id="ephemeris-status-text">Select a site to query JPL Horizons</span>
+          </div>
+        </form>
+        <div id="mission-list" class="mission-list"></div>
+        <div id="mission-detail" class="mission-detail">
+          <div class="detail-empty">Select a site to see its analysis.</div>
+        </div>
+        <section class="window-panel" aria-label="Sunlight and Earth-link windows over the next 24 hours">
+          <div class="window-heading">
+            <div><span class="panel-eyebrow">Next 24 hours</span></div>
+            <span id="window-period" class="window-period">—</span>
+          </div>
+          <div class="window-lane">
+            <span class="window-label sun-label">Sun</span>
+            <div id="sun-timeline" class="window-track" aria-label="Sunlight window"></div>
+            <strong id="sun-duration">—</strong>
+          </div>
+          <div class="window-lane">
+            <span class="window-label earth-label">Earth</span>
+            <div id="earth-timeline" class="window-track" aria-label="Earth-link window"></div>
+            <strong id="earth-duration">—</strong>
+          </div>
+          <div class="window-legend"><span><i class="sun-legend"></i> Sun above horizon</span><span><i class="earth-legend"></i> Earth above horizon</span></div>
+        </section>
+        <div class="mission-panel-foot">Source: JPL Horizons. Local terrain may obstruct the link.</div>
+      </aside>
+
+      </div><div id="hover-tooltip" class="hover-tooltip" role="status" aria-live="polite">
+        <div class="tooltip-title"><span class="tooltip-cross">+</span> Terrain coordinates</div>
+        <div class="tooltip-coordinates"><span id="hover-lat">—</span><span id="hover-lon">—</span></div>
+        <div class="tooltip-meta"><span id="hover-light">Light —</span><span id="hover-los">LOS —</span></div>
+      </div>
+
+
+
+    </main>
+        <script type="module">
+      import("./src/main.js?v=lunar-motion").catch((error) => {
+        console.error(error);
+        document.querySelector("#loading-status").classList.add("hidden");
+        const message = document.querySelector("#error-message");
+        message.textContent = "Unable to load the 3D viewer. Check that your browser can reach Three.js.";
+        message.classList.add("visible");
+      });
+    </script>
+  </body>
+</html>

@@ -12,7 +12,7 @@ from urllib.parse import parse_qs, urlencode, urlsplit
 from urllib.request import Request, urlopen
 
 
-HOST = "0.0.0.0"
+HOST = "127.0.0.1"
 PORT = 8000
 HORIZONS_URL = "https://ssd.jpl.nasa.gov/api/horizons.api"
 
@@ -25,7 +25,7 @@ def parse_ephemeris_rows(result):
     try:
         rows = result.split("$$SOE", 1)[1].split("$$EOE", 1)[0]
     except IndexError as error:
-        raise HorizonsError("JPL Horizons no devolvió datos horarios para esta consulta.") from error
+        raise HorizonsError("JPL Horizons returned no hourly data for this query.") from error
 
     samples = []
     for line in rows.splitlines():
@@ -49,7 +49,7 @@ def parse_ephemeris_rows(result):
         })
 
     if not samples:
-        raise HorizonsError("JPL Horizons no devolvió filas de efemérides interpretables.")
+        raise HorizonsError("JPL Horizons returned no readable ephemeris rows.")
     return samples
 
 
@@ -82,11 +82,11 @@ def request_body_ephemeris(body, longitude, latitude, start_time):
         with urlopen(request, timeout=25) as response:
             payload = loads(response.read().decode("utf-8"))
     except HTTPError as error:
-        raise HorizonsError(f"JPL Horizons respondió HTTP {error.code}.") from error
+        raise HorizonsError(f"JPL Horizons returned HTTP {error.code}.") from error
     except (TimeoutError, URLError) as error:
-        raise HorizonsError("No se pudo conectar con JPL Horizons. Comprueba tu conexión e inténtalo de nuevo.") from error
+        raise HorizonsError("Unable to connect to JPL Horizons. Check your connection and try again.") from error
     except (UnicodeDecodeError, ValueError) as error:
-        raise HorizonsError("JPL Horizons devolvió una respuesta que no se pudo interpretar.") from error
+        raise HorizonsError("The response from JPL Horizons could not be read.") from error
 
     if payload.get("error"):
         raise HorizonsError(payload["error"])
@@ -127,13 +127,13 @@ class AppHandler(SimpleHTTPRequestHandler):
             date = query.get("date", [""])[0]
             time = query.get("time", [""])[0]
             if not (isfinite(longitude) and -180 <= longitude <= 180):
-                raise ValueError("La longitud debe estar entre -180 y 180 grados.")
+                raise ValueError("Longitudee must be between -180 and 180 degrees.")
             if not (isfinite(latitude) and -90 <= latitude <= 90):
-                raise ValueError("La latitud debe estar entre -90 y 90 grados.")
+                raise ValueError("Latitudee must be between -90 and 90 degrees.")
             datetime.strptime(f"{date} {time}", "%Y-%m-%d %H:%M")
             result = get_ephemeris(longitude, latitude, date, time)
         except ValueError as error:
-            self.send_json(400, {"error": str(error) or "Fecha, hora o coordenadas no válidas."})
+            self.send_json(400, {"error": str(error) or "Invalid date, time, or coordinates."})
             return
         except HorizonsError as error:
             self.send_json(502, {"error": str(error)})
@@ -155,6 +155,13 @@ class AppHandler(SimpleHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    print(f"LUNA planner: http://localhost:{PORT}")
-    print("JPL Horizons no requiere API key; este servidor no publica credenciales.")
-    ThreadingHTTPServer((HOST, PORT), AppHandler).serve_forever()
+    from sys import argv
+    from threading import Timer
+    from webbrowser import open as open_browser
+
+    url = f"http://{HOST}:{PORT}/"
+    with ThreadingHTTPServer((HOST, PORT), AppHandler) as server:
+        print(f"LUNA planner: {url}", flush=True)
+        if "--open" in argv:
+            Timer(0.3, open_browser, args=(url,)).start()
+        server.serve_forever()
