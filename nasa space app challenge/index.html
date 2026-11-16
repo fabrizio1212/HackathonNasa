@@ -14,7 +14,7 @@
         }
       }
     </script>
-    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./styles.css?v=9" />
   </head>
   <body>
     <main id="app">
@@ -27,7 +27,7 @@
           <div class="brand-mark"><span></span><span></span><span></span></div>
           <div>
             <div class="brand-title">LUNA <span>//</span> SOUTH POLE OPS</div>
-            <div class="brand-subtitle">MISSION PLANNING INTERFACE <i></i> SIMULATION MODE</div>
+            <div class="brand-subtitle">LUNAR SITE PLANNER <i></i> <span id="mode-subtitle">INICIANDO</span></div>
           </div>
         </div>
         <div class="top-status">
@@ -59,8 +59,8 @@
       <aside class="side-gauge elevation-gauge" aria-label="Elevación solar">
         <div class="gauge-title">SOL <span>EL</span></div>
         <div class="gauge-track">
-          <span class="gauge-label north">30°</span>
-          <span class="gauge-label equator">15°</span>
+          <span class="gauge-label north">90°</span>
+          <span class="gauge-label equator">45°</span>
           <span class="gauge-label south">0°</span>
           <div class="gauge-marker" id="elevation-marker"><i></i></div>
         </div>
@@ -83,8 +83,8 @@
 
       <section class="control-panel glass-panel">
         <div class="control-heading">
-          <div><div class="panel-eyebrow"><span class="eyebrow-line sun-line"></span> VECTOR SOLAR</div><small>AJUSTE MANUAL DE ILUMINACIÓN</small></div>
-          <span class="sun-status"><i></i> ACTIVO</span>
+          <div><div class="panel-eyebrow"><span class="eyebrow-line sun-line"></span> SIMULADOR SOLAR</div><small>AJUSTE MANUAL · AZIMUT / ELEVACIÓN</small></div>
+          <span class="sun-status"><i></i> <span id="mode-label">SIMULACIÓN</span></span>
         </div>
         <label class="slider-row" for="sun-azimuth">
           <span>AZIMUT <b id="sun-azimuth-value">045°</b></span>
@@ -93,8 +93,8 @@
         </label>
         <label class="slider-row elevation-slider" for="sun-elevation">
           <span>ELEVACIÓN <b id="sun-elevation-value">08.0°</b></span>
-          <input id="sun-elevation" type="range" min="0" max="30" step="0.5" value="8" />
-          <span class="slider-scale"><i>HORIZONTE</i><i>30°</i></span>
+          <input id="sun-elevation" type="range" min="0" max="90" step="0.5" value="8" />
+          <span class="slider-scale"><i>HORIZONTE</i><i>90°</i></span>
         </label>
         <div class="control-footer"><span>ARRASTRAR PARA ROTAR</span><span>RUEDA PARA ZOOM</span><button id="reset-view" type="button" aria-label="Restablecer vista">↺</button></div>
       </section>
@@ -102,16 +102,57 @@
       <aside class="mission-panel glass-panel">
         <div class="mission-panel-head">
           <div>
-            <div class="panel-eyebrow"><span class="eyebrow-line"></span> SITIOS DE MISIÓN</div>
-            <div class="mission-subtitle">POLO SUR · SELECCIÓN DE REFERENCIA</div>
+            <div class="panel-eyebrow"><span class="eyebrow-line"></span> ANÁLISIS DE MISIÓN</div>
+            <div class="mission-subtitle">LUNA · SITIOS Y VENTANAS DE OPERACIÓN</div>
           </div>
           <span class="site-count" id="site-count">07</span>
         </div>
+        <form id="ephemeris-form" class="ephemeris-form">
+          <div class="ephemeris-form-heading">
+            <span>FECHA Y HORA DE REFERENCIA</span>
+            <span class="utc-badge">UTC</span>
+          </div>
+          <div class="ephemeris-inputs">
+            <label>
+              <span>FECHA</span>
+              <input id="analysis-date" name="date" type="date" required />
+            </label>
+            <label>
+              <span>HORA</span>
+              <input id="analysis-time" name="time" type="time" value="12:00" required />
+            </label>
+            <button id="analyze-button" type="submit">
+              <span class="analyze-icon">↗</span>
+              <span>CALCULAR</span>
+            </button>
+          </div>
+          <div id="ephemeris-status" class="ephemeris-status" role="status" aria-live="polite">
+            <span class="status-dot"></span>
+            <span id="ephemeris-status-text">Selecciona un sitio para consultar JPL Horizons</span>
+          </div>
+        </form>
         <div id="mission-list" class="mission-list"></div>
         <div id="mission-detail" class="mission-detail">
           <div class="detail-empty"><span>⌖</span><div>SELECCIONA UN SITIO<br />PARA VER SU ANÁLISIS</div></div>
         </div>
-        <div class="mission-panel-foot">DATOS DE REFERENCIA · CONECTABLE A JSON / NASA API</div>
+        <section class="window-panel" aria-label="Ventanas solares y de comunicación de las próximas 24 horas">
+          <div class="window-heading">
+            <div><span class="panel-eyebrow"><span class="eyebrow-line"></span> PRÓXIMAS 24 HORAS</span></div>
+            <span id="window-period" class="window-period">—</span>
+          </div>
+          <div class="window-lane">
+            <span class="window-label sun-label">SOL</span>
+            <div id="sun-timeline" class="window-track" aria-label="Ventana solar"></div>
+            <strong id="sun-duration">—</strong>
+          </div>
+          <div class="window-lane">
+            <span class="window-label earth-label">TIERRA</span>
+            <div id="earth-timeline" class="window-track" aria-label="Ventana de comunicación"></div>
+            <strong id="earth-duration">—</strong>
+          </div>
+          <div class="window-legend"><span><i class="sun-legend"></i> SOL SOBRE HORIZONTE</span><span><i class="earth-legend"></i> ENLACE GEOMÉTRICO</span></div>
+        </section>
+        <div class="mission-panel-foot">EFEMÉRIDES JPL · VISIBILIDAD SIN OBSTRUCCIÓN DEL RELIEVE LOCAL</div>
       </aside>
 
       <div id="hover-tooltip" class="hover-tooltip" role="status" aria-live="polite">
@@ -128,6 +169,6 @@
       <div id="loading-status" class="loading-status"><span class="loading-spinner"></span> INICIALIZANDO TERRENO LUNAR…</div>
       <div id="error-message" class="error-message" role="alert"></div>
     </main>
-    <script type="module" src="./src/main.js"></script>
+    <script type="module" src="./src/main.js?v=6"></script>
   </body>
 </html>
