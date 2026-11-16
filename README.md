@@ -1,12 +1,30 @@
-# HackathonNasa
+# LUNA // South Pole Ops
 
-facu, el proyecto puede llegar a tener estas apis 
+Globo lunar interactivo para explorar relieve y comparar ubicaciones y horarios de referencia en el polo sur lunar. Three.js representa el globo; JPL Horizons aporta las posiciones aparentes del Sol y la Tierra para un observador en la superficie lunar.
 
-1. Para los Datos de los Sitios y Coordenadas (Panel Derecho)NASA Planetary Data System (PDS) / Lunar Reconnaissance Orbiter (LRO) Indexes: Puedes armar un JSON estático o una mini API interna con las coordenadas exactas de los sitios que ya tienes listados (Cráter Shackleton, Artemis III, etc.) sacadas de los documentos oficiales de la NASA.   USGS Astrogeology Gazetteer of Planetary Nomenclature: Si quieres que la lista de sitios de misión sea dinámica y traiga más cráteres o puntos de interés automáticamente por región.2. Para el Vector Solar y las Efemérides (Panel Izquierdo - Sliders de Azimut/Elevación)NASA JPL Horizons API (REST): Es la joya de la corona aquí. Puedes hacer que, cuando el usuario mueva el slider de fecha o hora UTC, la aplicación haga una consulta rápida a la API de Horizons pidiendo la posición exacta del Sol y la Tierra vista desde la latitud/longitud del punto seleccionado en la Luna. Te devolverá el azimut y elevación reales para ese día exacto.   3. Para el Estado de Línea de Visión con la Tierra ("Los Vista" / Comunicación)SPICE Kernels (vía WebAssembly o backend ligero): Si quieres calcular con precisión matemática si una montaña interrumpe la señal con la Tierra, puedes integrar rutinas de cálculo orbital basadas en los kernels oficiales de la NASA (NAIF SPICE). Para un hackathon, si la API de Horizons te da el ángulo de elevación de la Tierra sobre el horizonte y es mayor a 0°, muestras "Línea de Vista: Activa"; si es negativo (la Tierra está bajo el horizonte), muestras "Sin Señal".
+## Ejecutar localmente
 
-la api es una sola que puede llamar a todas, la sacas en https://api.nasa.gov/ si la pongo aca los bots secan la que yo saque, luego tambiem. cumple su mision principal, el proyecto sigue esto:
+Requiere Python 3 y conexión a Internet. Desde esta carpeta, inicia el servidor local:
 
-"Missions to the Moon’s south pole face extreme lighting and communication constraints, and planning them takes careful coordination between science and engineering teams. Tools for determining Sun and Earth positions at candidate landing sites exist, but their complicated interfaces make it difficult to evaluate critical information with efficiency. Your challenge is to create an intuitive tool or application that lets mission planners, educators, and the public compare landing sites and dates quickly, visualizing Sun and Earth positions relative to the horizon to assess power generation potential and direct-to-Earth communication windows."
+```powershell
+python server.py
+```
 
-por ahora es muy basico, si queres modificar las texturas preguntale a claudio que le parece y podes descargarlas aca https://svs.gsfc.nasa.gov/4720/ ahi tenes displacement y color
-con eso sabido, fucking god suerte y pasa lo q tengas cuando lo tengas ty bro.
+Abre <http://localhost:8000>. El servidor sirve la app y expone `/api/ephemeris` como proxy de mismo origen para JPL Horizons (el navegador no puede consultar ese servicio directamente por CORS).
+
+## Recursos
+
+- `lroc_color_4k.jpg`: albedo del TIFF local, convertido a JPEG para compatibilidad con navegadores.
+- `ldem_3_8bit.jpg`: mapa de elevación; se hornea en la geometría para que el relieve participe en las sombras y el raycasting, y se reutiliza como bump map.
+- Los sitios de referencia están definidos como datos en `src/main.js` para facilitar su sustitución por JSON o una API.
+
+## Efemérides y límites del modelo
+
+- JPL Horizons consulta posiciones aparentes y topocéntricas de Sol (ID 10) y Tierra (ID 399), observadas desde la latitud/longitud lunar elegida, para la fecha/hora UTC seleccionada y las 24 horas siguientes, en pasos horarios.
+- Las franjas estiman horas sobre el horizonte geométrico. La luz del globo usa la dirección solar del horario seleccionado y el modelo local de relieve para proyectar sombras.
+- El enlace a Tierra mostrado es geométrico. No incorpora un modelo de horizonte topográfico de alta resolución, estación retransmisora, libración detallada para operaciones ni restricciones de hardware. Las horas y el porcentaje de iluminación son ayudas comparativas, no predicciones operacionales.
+- Los mapas locales son referencias visuales globales y no reemplazan un DEM polar de alta resolución/LOLA ni productos de iluminación acumulada LROC.
+
+**No hace falta una API key ni un archivo `.env` para JPL Horizons.** La API pública de Horizons no requiere autenticación. El proxy local no almacena ni publica secretos; una clave de `api.nasa.gov` no es una “clave maestra” y no desbloquea Horizons. No pongas credenciales en el frontend.
+
+Los sitios son una selección de referencia para la interfaz, no una lista oficial de sitios aprobados para aterrizaje.
