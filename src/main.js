@@ -331,9 +331,20 @@ async function requestEphemeris(site) {
   });
 
   try {
-    const response = await fetch(`/api/ephemeris?${params}`);
-    const payload = await response.json();
-    if (!response.ok) throw new Error(payload.error || `Error HTTP ${response.status}`);
+    const response = await fetch(`/api/ephemeris?${params}`, {
+      headers: { Accept: "application/json" },
+    });
+    const contentType = response.headers.get("content-type") ?? "";
+    if (!contentType.toLowerCase().includes("application/json")) {
+      if (response.ok || response.status === 404 || response.status === 405) {
+        throw new Error("The ephemeris API is unavailable on this page. Start the Python server with Abrir-Luna.cmd and open http://127.0.0.1:8000/.");
+      }
+      throw new Error(`The ephemeris server returned HTTP ${response.status}. Try again or use the manual solar controls.`);
+    }
+    const payload = await response.json().catch(() => {
+      throw new Error("The ephemeris server returned an invalid response. Try again or use the manual solar controls.");
+    });
+    if (!response.ok) throw new Error(payload?.error || `HTTP ${response.status}`);
     if (requestId !== ephemerisRequest) return;
     ephemerisData = payload;
     updateSunVector();
