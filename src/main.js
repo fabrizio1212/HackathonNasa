@@ -67,7 +67,7 @@ const surfaceButton = $("#surface-toggle");
 const stage = viewport.closest(".map-stage");
 const app = $("#app");
 const missionToggle = $("#mission-toggle");
-const narrowLayout = window.matchMedia("(max-width: 700px)");
+const narrowLayout = window.matchMedia("(max-width: 900px)");
 
 function setMissionPanel(open) {
   app.classList.toggle("mission-open", open);
@@ -75,7 +75,11 @@ function setMissionPanel(open) {
   onResize();
 }
 
-missionToggle.addEventListener("click", () => setMissionPanel(!app.classList.contains("mission-open")));
+missionToggle.addEventListener("click", () => {
+  const open = !app.classList.contains("mission-open");
+  setMissionPanel(open);
+  if (open && narrowLayout.matches) $("#mission-panel").scrollIntoView({ block: "start" });
+});
 narrowLayout.addEventListener("change", () => setMissionPanel(!narrowLayout.matches));
 missionToggle.setAttribute("aria-expanded", String(!narrowLayout.matches));
 app.classList.toggle("mission-open", !narrowLayout.matches);
@@ -307,6 +311,20 @@ function updateEphemerisUI(data) {
   renderWindowTimeline(data.earth.samples, "earth-timeline", "earth-duration", "earth-visible");
 }
 
+function describeEphemerisError(value, depth = 0) {
+  if (typeof value === "string") return value.trim().replace(/^\[object Object\]?$/, "");
+  if (!value || typeof value !== "object" || depth >= 5) return "";
+  if (Array.isArray(value)) {
+    return [...new Set(value.map((item) => describeEphemerisError(item, depth + 1)).filter(Boolean))]
+      .slice(0, 3).join(" · ");
+  }
+  for (const key of ["message", "detail", "msg", "error_description", "description", "error", "errors", "title"]) {
+    const detail = describeEphemerisError(value[key], depth + 1);
+    if (detail) return detail;
+  }
+  return "";
+}
+
 async function requestEphemeris(site) {
   const requestId = ++ephemerisRequest;
   const date = $("#analysis-date").value;
@@ -344,7 +362,16 @@ async function requestEphemeris(site) {
     const payload = await response.json().catch(() => {
       throw new Error("The ephemeris server returned an invalid response. Try again or use the manual solar controls.");
     });
-    if (!response.ok) throw new Error(payload?.error || `HTTP ${response.status}`);
+    const serviceError = payload?.error ?? payload?.errors ?? payload?.detail;
+    if (!response.ok || serviceError) {
+      const detail = describeEphemerisError(serviceError ?? payload?.message ?? payload);
+      throw new Error(detail || (response.ok
+        ? "JPL Horizons could not complete the query."
+        : `The ephemeris server returned HTTP ${response.status}.`));
+    }
+    if (!payload?.site || !payload?.sun?.atStart || !payload?.earth?.atStart) {
+      throw new Error("The ephemeris server did not return positions for the Sun and Earth.");
+    }
     if (requestId !== ephemerisRequest) return;
     ephemerisData = payload;
     updateSunVector();
@@ -463,7 +490,10 @@ function getSiteSurface(site) {
 
 function teleportToSite(site) {
   surface.teleport(site);
-  if (narrowLayout.matches) setMissionPanel(false);
+  if (narrowLayout.matches) {
+    setMissionPanel(false);
+    stage.scrollIntoView({ block: "start" });
+  }
   $("#map-location").textContent = site.name;
   const location = `${formatCoordinate(site.lat, "lat")} · ${formatCoordinate(normalizeLongitudee(site.lon), "lon")}`;
   $("#map-source").textContent = site.id === "apollo-11"
@@ -776,7 +806,9 @@ function onResize() {
   camera.aspect = width / height;
   camera.fov = THREE.MathUtils.radToDeg(2 * Math.atan(Math.max(.325, .38 / camera.aspect)));
   if (!narrowLayout.matches && app.classList.contains("mission-open")) {
-    camera.setViewOffset(width, height, Math.min(width * .14, 175), 0, width, height);
+    const panel = $("#mission-panel").getBoundingClientRect();
+    const offset = (width - panel.left) / 2;
+    camera.setViewOffset(width, height, offset, 0, width, height);
   } else {
     camera.clearViewOffset();
   }

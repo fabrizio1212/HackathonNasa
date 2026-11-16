@@ -925,3 +925,106 @@ body { background: #08090d; }
 }
 .walk-pad { flex-wrap: wrap; max-width: 100%; }
 .walk-pad .walk-action { width: auto; min-width: 46px; }
+
+/* Align the HUD with the globe, then stack the panels when space runs out. */
+.compass-hud { left: 50%; }
+.mission-open .compass-hud {
+  left: calc(50% - var(--rail) / 2 - var(--edge) / 2);
+}
+.mission-panel { overscroll-behavior: contain; }
+.mission-item, .detail-top > div, .walk-help p { min-width: 0; }
+.mission-name, .detail-top h2, .ephemeris-status { overflow-wrap: anywhere; }
+.window-heading { flex-wrap: wrap; }
+.walk-help { right: var(--edge); }
+
+@media (max-width: 900px) {
+  #app {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    gap: 14px;
+    padding: 0 var(--edge) max(20px, env(safe-area-inset-bottom));
+  }
+  .topbar {
+    position: sticky;
+    top: 0;
+    inset-inline: auto;
+    width: 100%;
+    min-height: 64px;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    padding: 8px 0;
+    background: #08090d;
+    pointer-events: auto;
+  }
+  .top-status { display: none; }
+  #mission-toggle { margin-left: auto; }
+  .map-stage,
+  .map-controls,
+  .mission-panel {
+    position: relative;
+    inset: auto;
+    width: min(100%, 720px);
+  }
+  .map-stage {
+    height: clamp(310px, 60svh, 630px);
+    border: 1px solid #353946;
+    border-radius: 8px;
+    scroll-margin-top: 74px;
+  }
+  .map-stage.walking { height: clamp(340px, 78svh, 660px); }
+  .map-title {
+    top: 14px;
+    left: 14px;
+    right: 14px;
+    text-align: center;
+  }
+  .walking .map-title { max-width: none; }
+  .surface-toggle {
+    top: auto;
+    bottom: 38px;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+  }
+  .walking .surface-toggle { top: 70px; bottom: auto; }
+  .map-legend {
+    left: 12px;
+    right: 12px;
+    bottom: 10px;
+    justify-content: center;
+  }
+  .walk-help {
+    left: 10px;
+    right: 10px;
+    bottom: 14px;
+    display: grid;
+    justify-items: center;
+    text-align: center;
+  }
+  .walk-pad { justify-content: center; }
+  .map-controls { grid-template-columns: 1fr 1fr; }
+  .mission-panel {
+    overflow: visible;
+    scroll-margin-top: 74px;
+  }
+  .mission-list { max-height: min(260px, 38svh); }
+}
+
+@media (max-width: 460px) {
+  .brand-title span { display: block; margin-left: 0; }
+  .readout-panel, .control-panel { padding: 12px; }
+  .map-controls { grid-template-columns: minmax(0, 1fr); }
+  .control-panel { border-top: 1px solid #353946; border-left: 0; }
+  .ephemeris-inputs { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .ephemeris-inputs button { grid-column: 1 / -1; }
+}
+
+@media (min-width: 901px) and (max-height: 650px) {
+  .map-controls {
+    max-height: 36svh;
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+}
